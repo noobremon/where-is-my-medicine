@@ -1,0 +1,41 @@
+{
+    "expo": {
+        "name": "Where Is My Medicine",
+        "slug": "wimm-customer",
+        "version": "1.0.0",
+        "orientation": "portrait",
+        "icon": "./assets/icon.png",
+        "userInterfaceStyle": "light",
+        "splash": {
+            "backgroundColor": "#0D9488"
+        },
+        "assetBundlePatterns": [
+            "**/*"
+        ],
+        "ios": {
+            "supportsTablet": false,
+            "bundleIdentifier": "com.wimm.customer",
+            "infoPlist": {
+                "NSLocationWhenInUseUsageDescription": "We need your location to find nearby pharmacies.",
+                "NSCameraUsageDescription": "We need camera access to capture prescription images."
+            }
+        },
+        "android": {
+            "adaptiveIcon": {
+                "backgroundColor": "#0D9488"
+            },
+            "package": "com.wimm.customer",
+            "permissions": [
+                "ACCESS_FINE_LOCATION",
+                "ACCESS_COARSE_LOCATION",
+                "CAMERA"
+            ]
+        },
+        "plugins": [
+            "expo-location",
+            "expo-image-picker",
+            "expo-camera"
+        ],
+        "scheme": "wimm-customer"
+    }
+}

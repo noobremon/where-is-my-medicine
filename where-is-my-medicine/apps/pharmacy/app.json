@@ -1,0 +1,37 @@
+{
+    "expo": {
+        "name": "WIMM Pharmacy",
+        "slug": "wimm-pharmacy",
+        "version": "1.0.0",
+        "orientation": "portrait",
+        "icon": "./assets/icon.png",
+        "userInterfaceStyle": "light",
+        "splash": {
+            "backgroundColor": "#7C3AED"
+        },
+        "assetBundlePatterns": [
+            "**/*"
+        ],
+        "ios": {
+            "supportsTablet": false,
+            "bundleIdentifier": "com.wimm.pharmacy",
+            "infoPlist": {
+                "NSLocationWhenInUseUsageDescription": "We need location to register your pharmacy and serve nearby customers."
+            }
+        },
+        "android": {
+            "adaptiveIcon": {
+                "backgroundColor": "#7C3AED"
+            },
+            "package": "com.wimm.pharmacy",
+            "permissions": [
+                "ACCESS_FINE_LOCATION",
+                "ACCESS_COARSE_LOCATION"
+            ]
+        },
+        "plugins": [
+            "expo-location"
+        ],
+        "scheme": "wimm-pharmacy"
+    }
+}

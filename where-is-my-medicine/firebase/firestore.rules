@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: get the user's role from their profile document
+    function userRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && userRole() == 'admin';
+    }
+
+    function isPharmacy() {
+      return isAuthenticated() && userRole() == 'pharmacy';
+    }
+
+    function isCustomer() {
+      return isAuthenticated() && userRole() == 'customer';
+    }
+
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    // ─── Users Collection ────────────────────────────────
+    match /users/{uid} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(uid);
+      allow update: if isOwner(uid) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ─── Pharmacies Collection ───────────────────────────
+    match /pharmacies/{pharmacyId} {
+      // Any authenticated user can read (customers search pharmacies)
+      allow read: if isAuthenticated();
+      // Only admins can create new pharmacy documents (onboarding)
+      allow create: if isAdmin();
+      // Pharmacy owner can update their own data, admins can update any
+      allow update: if isOwner(pharmacyId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ─── Medicine Requests Collection ────────────────────
+    match /medicineRequests/{requestId} {
+      // Read: customer who created it, notified pharmacies, or admin
+      allow read: if isAuthenticated() && (
+        resource.data.customerId == request.auth.uid ||
+        request.auth.uid in resource.data.notifiedPharmacies ||
+        isAdmin()
+      );
+      // Only customers can create requests
+      allow create: if isCustomer();
+      // Customer can cancel, pharmacy can respond
+      allow update: if isAuthenticated() && (
+        resource.data.customerId == request.auth.uid ||
+        (isPharmacy() && request.auth.uid in resource.data.notifiedPharmacies)
+      );
+      allow delete: if isAdmin();
+    }
+
+    // ─── Admin Config (singleton) ────────────────────────
+    match /adminConfig/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+  }
+}

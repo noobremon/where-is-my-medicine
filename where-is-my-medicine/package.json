@@ -1,0 +1,23 @@
+{
+  "name": "where-is-my-medicine",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "firebase/functions"
+  ],
+  "scripts": {
+    "admin": "npm run dev --workspace=apps/admin",
+    "customer": "npm run start --workspace=apps/customer",
+    "pharmacy": "npm run start --workspace=apps/pharmacy",
+    "functions": "npm run serve --workspace=firebase/functions"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@expo/metro-runtime": "~4.0.1",
+    "react-native-web": "~0.19.13"
+  }
+}
