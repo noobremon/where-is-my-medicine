@@ -1,5 +1,5 @@
 // Home Screen — Medicine Search + Request Creation
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     View,
     Text,
@@ -9,7 +9,7 @@ import {
     StyleSheet,
     ActivityIndicator,
     Alert,
-    RefreshControl,
+
 } from 'react-native';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
@@ -73,7 +73,7 @@ export default function HomeScreen({ navigation }) {
             const pharmacies = await findNearbyPharmacies(
                 location,
                 10, // 10 km radius
-                searchQuery.trim()
+                searchQuery.trim().toLowerCase()
             );
             setResults(pharmacies);
             if (pharmacies.length === 0) {
@@ -95,7 +95,14 @@ export default function HomeScreen({ navigation }) {
     };
 
     const handleSendRequest = async () => {
-        if (!searchQuery.trim() || !location) return;
+        if (!searchQuery.trim()) {
+            Alert.alert('Error', 'Please enter a medicine name first.');
+            return;
+        }
+        if (!location) {
+            Alert.alert('Error', 'Location not available. Please enable GPS.');
+            return;
+        }
 
         try {
             const geoLoc = createGeoLocation(location.lat, location.lng);
@@ -135,7 +142,7 @@ export default function HomeScreen({ navigation }) {
                 <Text style={styles.pharmacyPhone}>{item.phone}</Text>
             </View>
             <View style={styles.distanceBadge}>
-                <Text style={styles.distanceText}>{item.distanceKm} km</Text>
+                <Text style={styles.distanceText}>{item.distanceKm?.toFixed(1) || '?'} km</Text>
             </View>
         </TouchableOpacity>
     );

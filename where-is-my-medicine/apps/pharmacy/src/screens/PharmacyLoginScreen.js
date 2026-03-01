@@ -7,7 +7,7 @@ import {
 import { signIn } from '@wimm/firebase-config';
 import { Ionicons } from '@expo/vector-icons';
 
-export default function PharmacyLoginScreen({ navigation }) {
+export default function PharmacyLoginScreen() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);

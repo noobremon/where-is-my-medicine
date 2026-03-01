@@ -11,6 +11,7 @@ import {
     addPharmacyResponse,
     updatePharmacyHighlights,
 } from '@wimm/firebase-config';
+import { serverTimestamp } from 'firebase/firestore';
 import { getDistanceKm } from '@wimm/shared';
 import usePharmacyStore from '../store/usePharmacyStore';
 
@@ -120,7 +121,7 @@ export default function RespondRequestScreen({ route, navigation }) {
                 status,
                 pharmacyHighlights: status === 'accepted' ? pharmacyHighlights : [],
                 distanceKm: distKm,
-                respondedAt: new Date(),
+                respondedAt: serverTimestamp(),
             });
 
             Alert.alert(

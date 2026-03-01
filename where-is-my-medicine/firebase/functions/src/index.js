@@ -43,7 +43,7 @@ async function findNearbyPharmacies(center, radiusKm, medicineName) {
                 distanceBetween(
                     [data.location.lat, data.location.lng],
                     [center.lat, center.lng]
-                ) / 1000;
+                );
 
             if (distKm <= radiusKm) {
                 // Filter by medicine if provided

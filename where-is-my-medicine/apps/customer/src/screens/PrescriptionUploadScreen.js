@@ -1,6 +1,6 @@
 // Prescription Upload + Highlight Drawing Screen
 // User can capture/pick an image and draw rectangles to highlight specific medicines
-import React, { useState, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import {
     View,
     Text,
@@ -11,6 +11,7 @@ import {
     ActivityIndicator,
     Dimensions,
     PanResponder,
+    TextInput,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
@@ -101,6 +102,21 @@ export default function PrescriptionUploadScreen({ navigation }) {
 
     // ─── Image Picker ──────────────────────────────────
     const pickImage = async (useCamera) => {
+        // Request appropriate permissions
+        if (useCamera) {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Permission Required', 'Camera access is needed to take prescription photos.');
+                return;
+            }
+        } else {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('Permission Required', 'Gallery access is needed to select prescription images.');
+                return;
+            }
+        }
+
         const method = useCamera
             ? ImagePicker.launchCameraAsync
             : ImagePicker.launchImageLibraryAsync;
@@ -186,6 +202,18 @@ export default function PrescriptionUploadScreen({ navigation }) {
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Upload Prescription</Text>
                 <View style={{ width: 24 }} />
+            </View>
+
+            {/* Medicine Name Input */}
+            <View style={styles.nameInputRow}>
+                <Ionicons name="medkit-outline" size={20} color="#9CA3AF" />
+                <TextInput
+                    style={styles.nameInput}
+                    placeholder="Medicine name (optional)"
+                    placeholderTextColor="#9CA3AF"
+                    value={medicineName}
+                    onChangeText={setMedicineName}
+                />
             </View>
 
             {/* Image Area */}
@@ -332,6 +360,13 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20, paddingTop: 60, paddingBottom: 16,
     },
     headerTitle: { fontSize: 18, fontWeight: '700', color: '#111827' },
+    nameInputRow: {
+        flexDirection: 'row', alignItems: 'center', gap: 10,
+        marginHorizontal: 20, marginBottom: 12, backgroundColor: '#FFFFFF',
+        borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12,
+        borderWidth: 1, borderColor: '#E5E7EB',
+    },
+    nameInput: { flex: 1, fontSize: 15, color: '#111827' },
     imageSection: { flex: 1, alignItems: 'center', paddingHorizontal: 20, paddingTop: 8 },
     imageContainer: {
         borderRadius: 14, overflow: 'hidden', backgroundColor: '#000',

@@ -8,14 +8,16 @@ import {
     ActivityIndicator,
     TouchableOpacity,
     Image,
+    Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { subscribeMedicineRequest } from '@wimm/firebase-config';
+import { subscribeMedicineRequest, acceptRequest } from '@wimm/firebase-config';
 
 export default function RequestDetailScreen({ route, navigation }) {
     const { requestId } = route.params;
     const [request, setRequest] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [accepting, setAccepting] = useState(false);
 
     useEffect(() => {
         const unsub = subscribeMedicineRequest(requestId, (data) => {
@@ -62,6 +64,18 @@ export default function RequestDetailScreen({ route, navigation }) {
     const acceptedResponses = responses.filter(([, r]) => r.status === 'accepted');
     const rejectedResponses = responses.filter(([, r]) => r.status === 'rejected');
 
+    const handleAcceptPharmacy = async (pharmacyId) => {
+        setAccepting(true);
+        try {
+            await acceptRequest(requestId, pharmacyId);
+        } catch (error) {
+            console.error('Accept error:', error);
+            Alert.alert('Error', 'Failed to accept pharmacy. Please try again.');
+        } finally {
+            setAccepting(false);
+        }
+    };
+
     const renderResponse = ({ item: [pharmacyId, response] }) => (
         <View
             style={[
@@ -83,7 +97,7 @@ export default function RequestDetailScreen({ route, navigation }) {
                 </View>
                 {response.distanceKm != null && (
                     <View style={styles.distBadge}>
-                        <Text style={styles.distText}>{response.distanceKm} km</Text>
+                        <Text style={styles.distText}>{response.distanceKm?.toFixed(1) || '?'} km</Text>
                     </View>
                 )}
             </View>
@@ -95,6 +109,24 @@ export default function RequestDetailScreen({ route, navigation }) {
                     <Text style={styles.highlightText}>
                         {response.pharmacyHighlights.length} medicine(s) marked as available
                     </Text>
+                </View>
+            )}
+            {/* Accept button for accepted responses (let customer confirm which pharmacy to visit) */}
+            {response.status === 'accepted' && !request.acceptedPharmacyId && (
+                <TouchableOpacity
+                    style={styles.acceptBtn}
+                    onPress={() => handleAcceptPharmacy(pharmacyId)}
+                    disabled={accepting}
+                >
+                    <Text style={styles.acceptBtnText}>
+                        {accepting ? 'Accepting...' : 'Choose This Pharmacy'}
+                    </Text>
+                </TouchableOpacity>
+            )}
+            {request.acceptedPharmacyId === pharmacyId && (
+                <View style={styles.chosenBadge}>
+                    <Ionicons name="checkmark-circle" size={14} color="#059669" />
+                    <Text style={styles.chosenText}>Your chosen pharmacy</Text>
                 </View>
             )}
         </View>
@@ -241,4 +273,15 @@ const styles = StyleSheet.create({
     highlightText: { fontSize: 12, color: '#6B7280' },
     emptyResponses: { alignItems: 'center', paddingVertical: 40 },
     emptyText: { fontSize: 14, color: '#9CA3AF' },
+    acceptBtn: {
+        backgroundColor: '#059669', borderRadius: 10, paddingVertical: 10,
+        alignItems: 'center', marginTop: 12,
+    },
+    acceptBtnText: { color: '#fff', fontSize: 14, fontWeight: '700' },
+    chosenBadge: {
+        flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10,
+        backgroundColor: '#D1FAE5', borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6,
+        alignSelf: 'flex-start',
+    },
+    chosenText: { fontSize: 12, fontWeight: '600', color: '#059669' },
 });

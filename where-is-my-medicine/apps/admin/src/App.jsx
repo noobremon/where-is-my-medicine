@@ -1,6 +1,6 @@
 // WIMM Admin Panel — Full application with login, dashboard, pharmacy management
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+
 import {
     signInWithEmailAndPassword,
     signOut,
@@ -276,6 +276,10 @@ function PharmaciesPage({ pharmacies, onRefresh }) {
                 // Sign out from secondary immediately
                 const { signOut: signOutSecondary } = await import('firebase/auth');
                 await signOutSecondary(secondaryAuth);
+
+                // Clean up the secondary app to avoid crash on next onboard
+                const { deleteApp } = await import('firebase/app');
+                await deleteApp(secondaryApp);
 
                 // Create user profile
                 await setDoc(doc(db, 'users', uid), {
