@@ -1,7 +1,7 @@
 // Firebase configuration and initialization
 // Replace these values with your actual Firebase project config
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, initializeAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
@@ -16,7 +16,22 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 
-export const auth = getAuth(app);
+// For React Native, use initializeAuth with AsyncStorage persistence.
+// For web, fall back to getAuth which uses browser persistence.
+let auth: ReturnType<typeof getAuth>;
+try {
+    // These imports only resolve in React Native (Metro bundler)
+    const { getReactNativePersistence: getRNPersistence } = require('firebase/auth');
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    auth = initializeAuth(app, {
+        persistence: getRNPersistence(AsyncStorage),
+    });
+} catch (_e) {
+    auth = getAuth(app);
+}
+
+export { auth };
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 export default app;
+

@@ -2,7 +2,7 @@
     "name": "wimm-customer",
     "version": "1.0.0",
     "private": true,
-    "main": "expo/AppEntry.js",
+    "main": "./index.js",
     "scripts": {
         "start": "npx expo start",
         "android": "npx expo start --android",
@@ -29,7 +29,8 @@
         "react-native-svg": "~15.11.0",
         "zustand": "^4.5.0",
         "firebase": "^10.7.0",
-        "geofire-common": "^6.0.0"
+        "geofire-common": "^6.0.0",
+        "@react-native-async-storage/async-storage": "^1.18.1"
     },
     "devDependencies": {
         "@babel/core": "^7.24.0",
