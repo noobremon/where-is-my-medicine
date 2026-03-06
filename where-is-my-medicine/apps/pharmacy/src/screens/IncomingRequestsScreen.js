@@ -22,12 +22,16 @@ export default function IncomingRequestsScreen({ navigation }) {
     }, [user?.uid]);
 
     const getTimeAgo = (timestamp) => {
-        if (!timestamp?.toDate) return '';
-        const diff = Date.now() - timestamp.toDate().getTime();
-        const mins = Math.floor(diff / 60000);
-        if (mins < 1) return 'Just now';
-        if (mins < 60) return `${mins}m ago`;
-        return `${Math.floor(mins / 60)}h ago`;
+        if (!timestamp || !timestamp.toDate) return 'Just now';
+        try {
+            const diff = Date.now() - timestamp.toDate().getTime();
+            const mins = Math.floor(diff / 60000);
+            if (mins < 1) return 'Just now';
+            if (mins < 60) return `${mins}m ago`;
+            return `${Math.floor(mins / 60)}h ago`;
+        } catch (_e) {
+            return 'Just now';
+        }
     };
 
     const renderRequest = ({ item }) => {

@@ -9,7 +9,6 @@ import {
     StyleSheet,
     ActivityIndicator,
     Alert,
-
 } from 'react-native';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
@@ -101,6 +100,10 @@ export default function HomeScreen({ navigation }) {
         }
         if (!location) {
             Alert.alert('Error', 'Location not available. Please enable GPS.');
+            return;
+        }
+        if (!user?.uid) {
+            Alert.alert('Error', 'You must be signed in to send a request.');
             return;
         }
 

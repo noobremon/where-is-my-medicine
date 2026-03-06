@@ -36,6 +36,9 @@ import {
     createGeoLocation,
 } from '@wimm/shared';
 
+// Re-export serverTimestamp so consumers don't need direct firebase/firestore imports
+export { serverTimestamp } from 'firebase/firestore';
+
 // ─── User Operations ─────────────────────────────────────
 
 export async function createUserProfile(

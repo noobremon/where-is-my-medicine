@@ -10,8 +10,8 @@ import {
     subscribeMedicineRequest,
     addPharmacyResponse,
     updatePharmacyHighlights,
+    serverTimestamp,
 } from '@wimm/firebase-config';
-import { serverTimestamp } from 'firebase/firestore';
 import { getDistanceKm } from '@wimm/shared';
 import usePharmacyStore from '../store/usePharmacyStore';
 
