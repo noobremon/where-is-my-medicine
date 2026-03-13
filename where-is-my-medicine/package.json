@@ -11,12 +11,16 @@
     "admin": "npm run dev --workspace=apps/admin",
     "customer": "npm run start --workspace=apps/customer",
     "pharmacy": "npm run start --workspace=apps/pharmacy",
-    "functions": "npm run serve --workspace=firebase/functions"
+    "functions": "npm run serve --workspace=firebase/functions",
+    "postinstall": "patch-package"
   },
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
     "@babel/types": "^7.29.0"
+  },
+  "devDependencies": {
+    "patch-package": "^8.0.1"
   }
 }

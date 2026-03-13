@@ -1,0 +1,63 @@
+diff --git a/node_modules/metro-file-map/src/lib/RootPathUtils.js b/node_modules/metro-file-map/src/lib/RootPathUtils.js
+index 78a4a45..7957aba 100644
+--- a/node_modules/metro-file-map/src/lib/RootPathUtils.js
++++ b/node_modules/metro-file-map/src/lib/RootPathUtils.js
+@@ -36,12 +36,19 @@ const UP_FRAGMENT_SEP = ".." + path.sep;
+ const SEP_UP_FRAGMENT = path.sep + "..";
+ const UP_FRAGMENT_SEP_LENGTH = UP_FRAGMENT_SEP.length;
+ const CURRENT_FRAGMENT = "." + path.sep;
++function normalizeWindowsDriveLetter(filePath) {
++  if (process.platform !== "win32" || typeof filePath !== "string") {
++    return filePath;
++  }
++  return filePath.replace(/^[a-z]:/, (match) => match.toUpperCase());
++}
+ class RootPathUtils {
+   #rootDir;
+   #rootDirnames;
+   #rootParts;
+   #rootDepth;
+   constructor(rootDir) {
++    rootDir = normalizeWindowsDriveLetter(rootDir);
+     this.#rootDir = rootDir;
+     const rootDirnames = [];
+     for (
+@@ -65,6 +72,7 @@ class RootPathUtils {
+     return this.#rootParts;
+   }
+   absoluteToNormal(absolutePath) {
++    absolutePath = normalizeWindowsDriveLetter(absolutePath);
+     let endOfMatchingPrefix = 0;
+     let lastMatchingPartIdx = 0;
+     for (
+@@ -90,6 +98,7 @@ class RootPathUtils {
+     );
+   }
+   #slowAbsoluteToNormal(absolutePath) {
++    absolutePath = normalizeWindowsDriveLetter(absolutePath);
+     const endsWithSep = absolutePath.endsWith(path.sep);
+     const result = path.relative(this.#rootDir, absolutePath);
+     return endsWithSep && !result.endsWith(path.sep)
+@@ -97,6 +106,10 @@ class RootPathUtils {
+       : result;
+   }
+   normalToAbsolute(normalPath) {
++    normalPath = normalizeWindowsDriveLetter(normalPath);
++    if (path.isAbsolute(normalPath)) {
++      return normalPath;
++    }
+     let left = this.#rootDir;
+     let i = 0;
+     let pos = 0;
+@@ -164,7 +177,10 @@ class RootPathUtils {
+     };
+   }
+   relative(from, to) {
+-    return path.relative(from, to);
++    return path.relative(
++      normalizeWindowsDriveLetter(from),
++      normalizeWindowsDriveLetter(to),
++    );
+   }
+   #tryCollapseIndirectionsInSuffix(
+     fullPath,
