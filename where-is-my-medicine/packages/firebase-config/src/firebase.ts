@@ -1,7 +1,11 @@
 // Firebase configuration and initialization
-// Replace these values with your actual Firebase project config
-import { initializeApp } from 'firebase/app';
-import { getAuth, initializeAuth } from 'firebase/auth';
+import { getApp, getApps, initializeApp } from 'firebase/app';
+import type { Auth } from 'firebase/auth';
+import {
+    getAuth as getFirebaseAuth,
+    getReactNativePersistence,
+    initializeAuth,
+} from '@firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
@@ -14,20 +18,26 @@ const firebaseConfig = {
     appId: '1:942251675078:web:5792d2ab15291ccc5776c7',
 };
 
-const app = initializeApp(firebaseConfig);
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
-// For React Native, use initializeAuth with AsyncStorage persistence.
-// For web, fall back to getAuth which uses browser persistence.
-let auth: ReturnType<typeof getAuth>;
-try {
-    // These imports only resolve in React Native (Metro bundler)
-    const { getReactNativePersistence: getRNPersistence } = require('firebase/auth');
+const isReactNative =
+    typeof navigator !== 'undefined' && navigator.product === 'ReactNative';
+
+let auth: Auth;
+
+if (isReactNative) {
     const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-    auth = initializeAuth(app, {
-        persistence: getRNPersistence(AsyncStorage),
-    });
-} catch (_e) {
-    auth = getAuth(app);
+
+    try {
+        auth = initializeAuth(app, {
+            persistence: getReactNativePersistence(AsyncStorage),
+        });
+    } catch (_error) {
+        // Fast refresh can re-run this module after auth is already initialised.
+        auth = getFirebaseAuth(app);
+    }
+} else {
+    auth = getFirebaseAuth(app);
 }
 
 export { auth };
