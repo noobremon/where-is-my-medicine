@@ -7,7 +7,7 @@ import {
     User,
     updateProfile,
 } from 'firebase/auth';
-import { auth } from './firebase';
+import { getAuthInstance } from './firebase';
 import { createUserProfile, getUserProfile } from './firestore';
 import { UserRole, UserProfile } from '@wimm/shared';
 
@@ -21,7 +21,7 @@ export async function registerUser(
     phone: string,
     role: UserRole
 ): Promise<User> {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
+    const cred = await createUserWithEmailAndPassword(getAuthInstance(), email, password);
     await updateProfile(cred.user, { displayName });
 
     await createUserProfile(cred.user.uid, {
@@ -39,7 +39,7 @@ export async function registerUser(
  * Sign in existing user
  */
 export async function signIn(email: string, password: string): Promise<User> {
-    const cred = await signInWithEmailAndPassword(auth, email, password);
+    const cred = await signInWithEmailAndPassword(getAuthInstance(), email, password);
     return cred.user;
 }
 
@@ -47,14 +47,14 @@ export async function signIn(email: string, password: string): Promise<User> {
  * Sign out current user
  */
 export async function signOut(): Promise<void> {
-    await firebaseSignOut(auth);
+    await firebaseSignOut(getAuthInstance());
 }
 
 /**
  * Get current authenticated user (null if not signed in)
  */
 export function getCurrentUser(): User | null {
-    return auth.currentUser;
+    return getAuthInstance().currentUser;
 }
 
 /**
@@ -63,14 +63,14 @@ export function getCurrentUser(): User | null {
 export function onAuthChange(
     callback: (user: User | null) => void
 ): () => void {
-    return onAuthStateChanged(auth, callback);
+    return onAuthStateChanged(getAuthInstance(), callback);
 }
 
 /**
  * Get the full user profile from Firestore for the current user
  */
 export async function getCurrentUserProfile(): Promise<UserProfile | null> {
-    const user = auth.currentUser;
+    const user = getAuthInstance().currentUser;
     if (!user) return null;
     return getUserProfile(user.uid);
 }

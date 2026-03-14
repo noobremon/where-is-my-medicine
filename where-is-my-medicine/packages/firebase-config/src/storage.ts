@@ -5,7 +5,7 @@ import {
     getDownloadURL,
     deleteObject,
 } from 'firebase/storage';
-import { storage } from './firebase';
+import { getStorageInstance } from './firebase';
 
 /**
  * Upload a prescription image to Firebase Storage.
@@ -17,7 +17,7 @@ export async function uploadPrescriptionImage(
     requestId: string,
     imageBlob: Blob | Uint8Array
 ): Promise<string> {
-    const storageRef = ref(storage, `prescriptions/${requestId}.jpg`);
+    const storageRef = ref(getStorageInstance(), `prescriptions/${requestId}.jpg`);
     await uploadBytes(storageRef, imageBlob, {
         contentType: 'image/jpeg',
     });
@@ -30,7 +30,7 @@ export async function uploadPrescriptionImage(
 export async function getPrescriptionImageUrl(
     requestId: string
 ): Promise<string> {
-    const storageRef = ref(storage, `prescriptions/${requestId}.jpg`);
+    const storageRef = ref(getStorageInstance(), `prescriptions/${requestId}.jpg`);
     return getDownloadURL(storageRef);
 }
 
@@ -40,6 +40,6 @@ export async function getPrescriptionImageUrl(
 export async function deletePrescriptionImage(
     requestId: string
 ): Promise<void> {
-    const storageRef = ref(storage, `prescriptions/${requestId}.jpg`);
+    const storageRef = ref(getStorageInstance(), `prescriptions/${requestId}.jpg`);
     await deleteObject(storageRef);
 }

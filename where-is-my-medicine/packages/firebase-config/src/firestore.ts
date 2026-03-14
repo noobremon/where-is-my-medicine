@@ -19,7 +19,7 @@ import {
     DocumentReference,
     DocumentData,
 } from 'firebase/firestore';
-import { db } from './firebase';
+import { getDbInstance } from './firebase';
 import {
     COLLECTIONS,
     UserProfile,
@@ -45,7 +45,7 @@ export async function createUserProfile(
     uid: string,
     data: Omit<UserProfile, 'uid' | 'createdAt'>
 ): Promise<void> {
-    await setDoc(doc(db, COLLECTIONS.USERS, uid), {
+    await setDoc(doc(getDbInstance(), COLLECTIONS.USERS, uid), {
         ...data,
         uid,
         createdAt: serverTimestamp(),
@@ -53,7 +53,7 @@ export async function createUserProfile(
 }
 
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
-    const snap = await getDoc(doc(db, COLLECTIONS.USERS, uid));
+    const snap = await getDoc(doc(getDbInstance(), COLLECTIONS.USERS, uid));
     return snap.exists() ? (snap.data() as UserProfile) : null;
 }
 
@@ -61,11 +61,11 @@ export async function updateUserProfile(
     uid: string,
     data: Partial<UserProfile>
 ): Promise<void> {
-    await updateDoc(doc(db, COLLECTIONS.USERS, uid), data as DocumentData);
+    await updateDoc(doc(getDbInstance(), COLLECTIONS.USERS, uid), data as DocumentData);
 }
 
 export async function updateFcmToken(uid: string, token: string): Promise<void> {
-    await updateDoc(doc(db, COLLECTIONS.USERS, uid), { fcmToken: token });
+    await updateDoc(doc(getDbInstance(), COLLECTIONS.USERS, uid), { fcmToken: token });
 }
 
 // ─── Pharmacy Operations ─────────────────────────────────
@@ -74,7 +74,7 @@ export async function createPharmacy(
     pharmacyId: string,
     data: Omit<Pharmacy, 'id' | 'createdAt'>
 ): Promise<void> {
-    await setDoc(doc(db, COLLECTIONS.PHARMACIES, pharmacyId), {
+    await setDoc(doc(getDbInstance(), COLLECTIONS.PHARMACIES, pharmacyId), {
         ...data,
         id: pharmacyId,
         createdAt: serverTimestamp(),
@@ -82,7 +82,7 @@ export async function createPharmacy(
 }
 
 export async function getPharmacy(pharmacyId: string): Promise<Pharmacy | null> {
-    const snap = await getDoc(doc(db, COLLECTIONS.PHARMACIES, pharmacyId));
+    const snap = await getDoc(doc(getDbInstance(), COLLECTIONS.PHARMACIES, pharmacyId));
     return snap.exists() ? (snap.data() as Pharmacy) : null;
 }
 
@@ -90,11 +90,11 @@ export async function updatePharmacy(
     pharmacyId: string,
     data: Partial<Pharmacy>
 ): Promise<void> {
-    await updateDoc(doc(db, COLLECTIONS.PHARMACIES, pharmacyId), data as DocumentData);
+    await updateDoc(doc(getDbInstance(), COLLECTIONS.PHARMACIES, pharmacyId), data as DocumentData);
 }
 
 export async function getAllPharmacies(): Promise<Pharmacy[]> {
-    const snap = await getDocs(collection(db, COLLECTIONS.PHARMACIES));
+    const snap = await getDocs(collection(getDbInstance(), COLLECTIONS.PHARMACIES));
     return snap.docs.map((d) => d.data() as Pharmacy);
 }
 
@@ -116,7 +116,7 @@ export async function findNearbyPharmacies(
             startAt(start),
             endAt(end),
         ];
-        return getDocs(query(collection(db, COLLECTIONS.PHARMACIES), ...constraints));
+        return getDocs(query(collection(getDbInstance(), COLLECTIONS.PHARMACIES), ...constraints));
     });
 
     const snapshots = await Promise.all(promises);
@@ -156,7 +156,7 @@ export async function findNearbyPharmacies(
 export async function createMedicineRequest(
     data: Omit<MedicineRequest, 'id' | 'createdAt' | 'expiresAt' | 'responses' | 'notifiedPharmacies' | 'acceptedPharmacyId'>
 ): Promise<string> {
-    const ref = doc(collection(db, COLLECTIONS.MEDICINE_REQUESTS));
+    const ref = doc(collection(getDbInstance(), COLLECTIONS.MEDICINE_REQUESTS));
     const now = Timestamp.now();
     const ttl = 30; // minutes
     const expiresAt = Timestamp.fromMillis(now.toMillis() + ttl * 60 * 1000);
@@ -178,7 +178,7 @@ export async function updateRequestStatus(
     requestId: string,
     status: RequestStatus
 ): Promise<void> {
-    await updateDoc(doc(db, COLLECTIONS.MEDICINE_REQUESTS, requestId), { status });
+    await updateDoc(doc(getDbInstance(), COLLECTIONS.MEDICINE_REQUESTS, requestId), { status });
 }
 
 export async function addPharmacyResponse(
@@ -186,7 +186,7 @@ export async function addPharmacyResponse(
     pharmacyId: string,
     response: PharmacyResponse
 ): Promise<void> {
-    await updateDoc(doc(db, COLLECTIONS.MEDICINE_REQUESTS, requestId), {
+    await updateDoc(doc(getDbInstance(), COLLECTIONS.MEDICINE_REQUESTS, requestId), {
         [`responses.${pharmacyId}`]: response,
     });
 }
@@ -195,7 +195,7 @@ export async function acceptRequest(
     requestId: string,
     pharmacyId: string
 ): Promise<void> {
-    await updateDoc(doc(db, COLLECTIONS.MEDICINE_REQUESTS, requestId), {
+    await updateDoc(doc(getDbInstance(), COLLECTIONS.MEDICINE_REQUESTS, requestId), {
         status: 'accepted',
         acceptedPharmacyId: pharmacyId,
     });
@@ -210,7 +210,7 @@ export function subscribeMedicineRequest(
     callback: (request: MedicineRequest) => void
 ): () => void {
     return onSnapshot(
-        doc(db, COLLECTIONS.MEDICINE_REQUESTS, requestId),
+        doc(getDbInstance(), COLLECTIONS.MEDICINE_REQUESTS, requestId),
         (snap) => {
             if (snap.exists()) {
                 callback(snap.data() as MedicineRequest);
@@ -228,7 +228,7 @@ export function subscribePharmacyRequests(
     callback: (requests: MedicineRequest[]) => void
 ): () => void {
     const q = query(
-        collection(db, COLLECTIONS.MEDICINE_REQUESTS),
+        collection(getDbInstance(), COLLECTIONS.MEDICINE_REQUESTS),
         where('notifiedPharmacies', 'array-contains', pharmacyId),
         where('status', '==', 'pending')
     );
@@ -247,7 +247,7 @@ export function subscribeCustomerRequests(
     callback: (requests: MedicineRequest[]) => void
 ): () => void {
     const q = query(
-        collection(db, COLLECTIONS.MEDICINE_REQUESTS),
+        collection(getDbInstance(), COLLECTIONS.MEDICINE_REQUESTS),
         where('customerId', '==', customerId),
         orderBy('createdAt', 'desc')
     );
@@ -264,7 +264,7 @@ export async function updatePrescription(
     requestId: string,
     prescription: Prescription
 ): Promise<void> {
-    await updateDoc(doc(db, COLLECTIONS.MEDICINE_REQUESTS, requestId), {
+    await updateDoc(doc(getDbInstance(), COLLECTIONS.MEDICINE_REQUESTS, requestId), {
         prescription,
     });
 }
@@ -274,7 +274,7 @@ export async function updatePharmacyHighlights(
     pharmacyId: string,
     highlights: { x: number; y: number; width: number; height: number }[]
 ): Promise<void> {
-    await updateDoc(doc(db, COLLECTIONS.MEDICINE_REQUESTS, requestId), {
+    await updateDoc(doc(getDbInstance(), COLLECTIONS.MEDICINE_REQUESTS, requestId), {
         [`responses.${pharmacyId}.pharmacyHighlights`]: highlights,
     });
 }
