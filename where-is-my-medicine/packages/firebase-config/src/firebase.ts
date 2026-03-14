@@ -35,16 +35,17 @@ export function getAuthInstance() {
             typeof navigator !== 'undefined' && navigator.product === 'ReactNative';
 
         if (isReactNative) {
-            const AsyncStorage =
-                require('@react-native-async-storage/async-storage').default;
             try {
+                // Import AsyncStorage dynamically to avoid bundling issues
+                const AsyncStorage = require('@react-native-async-storage/async-storage').default;
                 // Access getReactNativePersistence via require to avoid
                 // dual-import issues with Metro's module resolution.
                 const { getReactNativePersistence } = require('firebase/auth');
                 _auth = initializeAuth(app, {
                     persistence: getReactNativePersistence(AsyncStorage),
                 });
-            } catch (_error) {
+            } catch (error) {
+                console.warn('Firebase Auth AsyncStorage setup failed, falling back to memory persistence:', error);
                 // Fast refresh or hot reload may re-run this after auth
                 // is already initialised — fall back to getAuth.
                 _auth = getAuth(app);

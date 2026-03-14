@@ -27,5 +27,23 @@ config.resolver.nodeModulesPaths = [
 ];
 config.resolver.unstable_enableSymlinks = true;
 
+// Add web platform support
+config.resolver.alias = {
+  'react-native': 'react-native-web',
+};
+
+// Configure source extensions for web
+config.resolver.sourceExts = [
+  'js',
+  'jsx',
+  'ts',
+  'tsx',
+  'json',
+  'web.js',
+  'web.jsx',
+  'web.ts',
+  'web.tsx',
+];
+
 module.exports = config;
 

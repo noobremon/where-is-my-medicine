@@ -25,6 +25,21 @@
   },
   "overrides": {
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "@react-navigation/core": {
+      "react": "19.1.0"
+    },
+    "@react-navigation/native": {
+      "react": "19.1.0"
+    },
+    "@react-navigation/native-stack": {
+      "react": "19.1.0"
+    },
+    "expo": {
+      "react": "19.1.0"
+    },
+    "react-freeze": {
+      "react": "19.1.0"
+    }
   }
 }
