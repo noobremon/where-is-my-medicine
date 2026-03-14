@@ -33,7 +33,7 @@
         "geofire-common": "^6.0.0",
         "hoist-non-react-statics": "^3.3.0",
         "merge-options": "^3.0.4",
-        "react": "^19.1.0",
+        "react": "19.1.0",
         "react-freeze": "^1.0.0",
         "react-native": "0.81.0",
         "react-native-gesture-handler": "~2.24.0",

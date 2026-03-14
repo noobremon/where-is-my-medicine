@@ -6,7 +6,6 @@ import {
     getDocs,
     setDoc,
     updateDoc,
-    deleteDoc,
     query,
     where,
     orderBy,
@@ -15,25 +14,12 @@ import {
     onSnapshot,
     serverTimestamp,
     Timestamp,
-    QueryConstraint,
-    DocumentReference,
-    DocumentData,
 } from 'firebase/firestore';
 import { getDbInstance } from './firebase';
-import {
-    COLLECTIONS,
-    UserProfile,
-    Pharmacy,
-    MedicineRequest,
-    GeoLocation,
-    Prescription,
-    PharmacyResponse,
-    RequestStatus,
-} from '@wimm/shared';
+import { COLLECTIONS } from '@wimm/shared';
 import {
     getGeohashBounds,
     getDistanceKm,
-    createGeoLocation,
 } from '@wimm/shared';
 
 // Re-export serverTimestamp so consumers don't need direct firebase/firestore imports
@@ -41,10 +27,7 @@ export { serverTimestamp } from 'firebase/firestore';
 
 // ─── User Operations ─────────────────────────────────────
 
-export async function createUserProfile(
-    uid: string,
-    data: Omit<UserProfile, 'uid' | 'createdAt'>
-): Promise<void> {
+export async function createUserProfile(uid, data) {
     await setDoc(doc(getDbInstance(), COLLECTIONS.USERS, uid), {
         ...data,
         uid,
@@ -52,28 +35,22 @@ export async function createUserProfile(
     });
 }
 
-export async function getUserProfile(uid: string): Promise<UserProfile | null> {
+export async function getUserProfile(uid) {
     const snap = await getDoc(doc(getDbInstance(), COLLECTIONS.USERS, uid));
-    return snap.exists() ? (snap.data() as UserProfile) : null;
+    return snap.exists() ? snap.data() : null;
 }
 
-export async function updateUserProfile(
-    uid: string,
-    data: Partial<UserProfile>
-): Promise<void> {
-    await updateDoc(doc(getDbInstance(), COLLECTIONS.USERS, uid), data as DocumentData);
+export async function updateUserProfile(uid, data) {
+    await updateDoc(doc(getDbInstance(), COLLECTIONS.USERS, uid), data);
 }
 
-export async function updateFcmToken(uid: string, token: string): Promise<void> {
+export async function updateFcmToken(uid, token) {
     await updateDoc(doc(getDbInstance(), COLLECTIONS.USERS, uid), { fcmToken: token });
 }
 
 // ─── Pharmacy Operations ─────────────────────────────────
 
-export async function createPharmacy(
-    pharmacyId: string,
-    data: Omit<Pharmacy, 'id' | 'createdAt'>
-): Promise<void> {
+export async function createPharmacy(pharmacyId, data) {
     await setDoc(doc(getDbInstance(), COLLECTIONS.PHARMACIES, pharmacyId), {
         ...data,
         id: pharmacyId,
@@ -81,36 +58,29 @@ export async function createPharmacy(
     });
 }
 
-export async function getPharmacy(pharmacyId: string): Promise<Pharmacy | null> {
+export async function getPharmacy(pharmacyId) {
     const snap = await getDoc(doc(getDbInstance(), COLLECTIONS.PHARMACIES, pharmacyId));
-    return snap.exists() ? (snap.data() as Pharmacy) : null;
+    return snap.exists() ? snap.data() : null;
 }
 
-export async function updatePharmacy(
-    pharmacyId: string,
-    data: Partial<Pharmacy>
-): Promise<void> {
-    await updateDoc(doc(getDbInstance(), COLLECTIONS.PHARMACIES, pharmacyId), data as DocumentData);
+export async function updatePharmacy(pharmacyId, data) {
+    await updateDoc(doc(getDbInstance(), COLLECTIONS.PHARMACIES, pharmacyId), data);
 }
 
-export async function getAllPharmacies(): Promise<Pharmacy[]> {
+export async function getAllPharmacies() {
     const snap = await getDocs(collection(getDbInstance(), COLLECTIONS.PHARMACIES));
-    return snap.docs.map((d) => d.data() as Pharmacy);
+    return snap.docs.map((d) => d.data());
 }
 
 /**
  * Find nearby active pharmacies using Geohash bounding-box queries.
  * Optionally filter by a specific medicine name.
  */
-export async function findNearbyPharmacies(
-    center: { lat: number; lng: number },
-    radiusKm: number,
-    medicineName?: string
-): Promise<(Pharmacy & { distanceKm: number })[]> {
+export async function findNearbyPharmacies(center, radiusKm, medicineName) {
     const bounds = getGeohashBounds(center, radiusKm);
 
     const promises = bounds.map(([start, end]) => {
-        const constraints: QueryConstraint[] = [
+        const constraints = [
             where('isActive', '==', true),
             orderBy('location.geohash'),
             startAt(start),
@@ -120,11 +90,11 @@ export async function findNearbyPharmacies(
     });
 
     const snapshots = await Promise.all(promises);
-    const pharmacies: (Pharmacy & { distanceKm: number })[] = [];
+    const pharmacies = [];
 
     for (const snap of snapshots) {
         for (const d of snap.docs) {
-            const pharmacy = d.data() as Pharmacy;
+            const pharmacy = d.data();
             const distKm = getDistanceKm(pharmacy.location, center);
 
             if (distKm <= radiusKm) {
@@ -141,7 +111,7 @@ export async function findNearbyPharmacies(
     }
 
     // Deduplicate (geohash ranges can overlap)
-    const seen = new Set<string>();
+    const seen = new Set();
     const unique = pharmacies.filter((p) => {
         if (seen.has(p.id)) return false;
         seen.add(p.id);
@@ -153,9 +123,7 @@ export async function findNearbyPharmacies(
 
 // ─── Medicine Request Operations ─────────────────────────
 
-export async function createMedicineRequest(
-    data: Omit<MedicineRequest, 'id' | 'createdAt' | 'expiresAt' | 'responses' | 'notifiedPharmacies' | 'acceptedPharmacyId'>
-): Promise<string> {
+export async function createMedicineRequest(data) {
     const ref = doc(collection(getDbInstance(), COLLECTIONS.MEDICINE_REQUESTS));
     const now = Timestamp.now();
     const ttl = 30; // minutes
@@ -174,27 +142,17 @@ export async function createMedicineRequest(
     return ref.id;
 }
 
-export async function updateRequestStatus(
-    requestId: string,
-    status: RequestStatus
-): Promise<void> {
+export async function updateRequestStatus(requestId, status) {
     await updateDoc(doc(getDbInstance(), COLLECTIONS.MEDICINE_REQUESTS, requestId), { status });
 }
 
-export async function addPharmacyResponse(
-    requestId: string,
-    pharmacyId: string,
-    response: PharmacyResponse
-): Promise<void> {
+export async function addPharmacyResponse(requestId, pharmacyId, response) {
     await updateDoc(doc(getDbInstance(), COLLECTIONS.MEDICINE_REQUESTS, requestId), {
         [`responses.${pharmacyId}`]: response,
     });
 }
 
-export async function acceptRequest(
-    requestId: string,
-    pharmacyId: string
-): Promise<void> {
+export async function acceptRequest(requestId, pharmacyId) {
     await updateDoc(doc(getDbInstance(), COLLECTIONS.MEDICINE_REQUESTS, requestId), {
         status: 'accepted',
         acceptedPharmacyId: pharmacyId,
@@ -205,15 +163,12 @@ export async function acceptRequest(
  * Subscribe to real-time updates on a medicine request.
  * Returns an unsubscribe function.
  */
-export function subscribeMedicineRequest(
-    requestId: string,
-    callback: (request: MedicineRequest) => void
-): () => void {
+export function subscribeMedicineRequest(requestId, callback) {
     return onSnapshot(
         doc(getDbInstance(), COLLECTIONS.MEDICINE_REQUESTS, requestId),
         (snap) => {
             if (snap.exists()) {
-                callback(snap.data() as MedicineRequest);
+                callback(snap.data());
             }
         }
     );
@@ -223,10 +178,7 @@ export function subscribeMedicineRequest(
  * Subscribe to medicine requests for a specific pharmacy.
  * Returns requests where this pharmacy is in notifiedPharmacies.
  */
-export function subscribePharmacyRequests(
-    pharmacyId: string,
-    callback: (requests: MedicineRequest[]) => void
-): () => void {
+export function subscribePharmacyRequests(pharmacyId, callback) {
     const q = query(
         collection(getDbInstance(), COLLECTIONS.MEDICINE_REQUESTS),
         where('notifiedPharmacies', 'array-contains', pharmacyId),
@@ -234,7 +186,7 @@ export function subscribePharmacyRequests(
     );
 
     return onSnapshot(q, (snap) => {
-        const requests = snap.docs.map((d) => d.data() as MedicineRequest);
+        const requests = snap.docs.map((d) => d.data());
         callback(requests);
     });
 }
@@ -242,10 +194,7 @@ export function subscribePharmacyRequests(
 /**
  * Subscribe to real-time updates on customer's own requests.
  */
-export function subscribeCustomerRequests(
-    customerId: string,
-    callback: (requests: MedicineRequest[]) => void
-): () => void {
+export function subscribeCustomerRequests(customerId, callback) {
     const q = query(
         collection(getDbInstance(), COLLECTIONS.MEDICINE_REQUESTS),
         where('customerId', '==', customerId),
@@ -253,27 +202,20 @@ export function subscribeCustomerRequests(
     );
 
     return onSnapshot(q, (snap) => {
-        const requests = snap.docs.map((d) => d.data() as MedicineRequest);
+        const requests = snap.docs.map((d) => d.data());
         callback(requests);
     });
 }
 
 // ─── Prescription Upload ──────────────────────────────────
 
-export async function updatePrescription(
-    requestId: string,
-    prescription: Prescription
-): Promise<void> {
+export async function updatePrescription(requestId, prescription) {
     await updateDoc(doc(getDbInstance(), COLLECTIONS.MEDICINE_REQUESTS, requestId), {
         prescription,
     });
 }
 
-export async function updatePharmacyHighlights(
-    requestId: string,
-    pharmacyId: string,
-    highlights: { x: number; y: number; width: number; height: number }[]
-): Promise<void> {
+export async function updatePharmacyHighlights(requestId, pharmacyId, highlights) {
     await updateDoc(doc(getDbInstance(), COLLECTIONS.MEDICINE_REQUESTS, requestId), {
         [`responses.${pharmacyId}.pharmacyHighlights`]: highlights,
     });

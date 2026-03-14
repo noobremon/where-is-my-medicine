@@ -1,11 +1,10 @@
 // Firebase configuration and initialization
 // Uses lazy initialization to ensure all Firebase component registrations
 // (e.g. @firebase/auth's registerAuth()) complete before services are accessed.
-import { FirebaseApp, getApp, getApps, initializeApp } from 'firebase/app';
-import { Auth, getAuth as getFirebaseAuth, initializeAuth } from 'firebase/auth';
-import * as firebaseAuth from 'firebase/auth';
-import { Firestore, getFirestore } from 'firebase/firestore';
-import { FirebaseStorage, getStorage } from 'firebase/storage';
+import { getApp, getApps, initializeApp } from 'firebase/app';
+import { getAuth, initializeAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
     apiKey: 'AIzaSyB2OCMA0qsmEnUBiTfRzrFhALvs_vxS4Xo',
@@ -17,19 +16,19 @@ const firebaseConfig = {
 };
 
 // ── Lazy singletons ────────────────────────────────────────
-let _app: FirebaseApp | null = null;
-let _auth: Auth | null = null;
-let _db: Firestore | null = null;
-let _storage: FirebaseStorage | null = null;
+let _app = null;
+let _auth = null;
+let _db = null;
+let _storage = null;
 
-export function getAppInstance(): FirebaseApp {
+export function getAppInstance() {
     if (!_app) {
         _app = getApps().length ? getApp() : initializeApp(firebaseConfig);
     }
     return _app;
 }
 
-export function getAuthInstance(): Auth {
+export function getAuthInstance() {
     if (!_auth) {
         const app = getAppInstance();
         const isReactNative =
@@ -39,30 +38,32 @@ export function getAuthInstance(): Auth {
             const AsyncStorage =
                 require('@react-native-async-storage/async-storage').default;
             try {
+                // Access getReactNativePersistence via require to avoid
+                // dual-import issues with Metro's module resolution.
+                const { getReactNativePersistence } = require('firebase/auth');
                 _auth = initializeAuth(app, {
-                    persistence: (firebaseAuth as any).getReactNativePersistence(
-                        AsyncStorage
-                    ),
+                    persistence: getReactNativePersistence(AsyncStorage),
                 });
             } catch (_error) {
-                // Fast refresh can re-run this module after auth is already initialised.
-                _auth = getFirebaseAuth(app);
+                // Fast refresh or hot reload may re-run this after auth
+                // is already initialised — fall back to getAuth.
+                _auth = getAuth(app);
             }
         } else {
-            _auth = getFirebaseAuth(app);
+            _auth = getAuth(app);
         }
     }
     return _auth;
 }
 
-export function getDbInstance(): Firestore {
+export function getDbInstance() {
     if (!_db) {
         _db = getFirestore(getAppInstance());
     }
     return _db;
 }
 
-export function getStorageInstance(): FirebaseStorage {
+export function getStorageInstance() {
     if (!_storage) {
         _storage = getStorage(getAppInstance());
     }
