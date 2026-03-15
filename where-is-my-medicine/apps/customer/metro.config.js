@@ -27,18 +27,21 @@ config.resolver.nodeModulesPaths = [
 ];
 config.resolver.unstable_enableSymlinks = true;
 
-// Add web platform support
-config.resolver.alias = {
-  'react-native': 'react-native-web',
-};
+// Add web platform support (only for web builds)
+if (process.env.EXPO_PLATFORM === 'web') {
+  config.resolver.alias = {
+    'react-native': 'react-native-web',
+  };
+}
 
-// Configure source extensions for web
+// Configure source extensions including cjs files for Firebase dependencies
 config.resolver.sourceExts = [
   'js',
   'jsx',
   'ts',
   'tsx',
   'json',
+  'cjs',
   'web.js',
   'web.jsx',
   'web.ts',
