@@ -2,9 +2,10 @@
 // Uses lazy initialization to ensure all Firebase component registrations
 // (e.g. @firebase/auth's registerAuth()) complete before services are accessed.
 import { getApp, getApps, initializeApp } from 'firebase/app';
-import { getAuth, initializeAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
+
+// Note: Firebase Auth imports are done dynamically to avoid registration issues
 
 const firebaseConfig = {
     apiKey: 'AIzaSyB2OCMA0qsmEnUBiTfRzrFhALvs_vxS4Xo',
@@ -34,24 +35,39 @@ export function getAuthInstance() {
         const isReactNative =
             typeof navigator !== 'undefined' && navigator.product === 'ReactNative';
 
-        if (isReactNative) {
-            try {
-                // Import AsyncStorage dynamically to avoid bundling issues
-                const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-                // Access getReactNativePersistence via require to avoid
-                // dual-import issues with Metro's module resolution.
-                const { getReactNativePersistence } = require('firebase/auth');
-                _auth = initializeAuth(app, {
-                    persistence: getReactNativePersistence(AsyncStorage),
-                });
-            } catch (error) {
-                console.warn('Firebase Auth AsyncStorage setup failed, falling back to memory persistence:', error);
-                // Fast refresh or hot reload may re-run this after auth
-                // is already initialised — fall back to getAuth.
+        try {
+            if (isReactNative) {
+                // For React Native, dynamically import Firebase Auth to avoid registration issues
+                const firebaseAuth = require('firebase/auth');
+                
+                // First try to initialize with AsyncStorage if available
+                try {
+                    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+                    const { getReactNativePersistence } = firebaseAuth;
+                    
+                    if (getReactNativePersistence && AsyncStorage) {
+                        _auth = firebaseAuth.initializeAuth(app, {
+                            persistence: getReactNativePersistence(AsyncStorage),
+                        });
+                        console.log('Firebase Auth initialized with AsyncStorage for React Native');
+                    } else {
+                        throw new Error('AsyncStorage or getReactNativePersistence not available');
+                    }
+                } catch (asyncError) {
+                    console.warn('AsyncStorage setup failed, using memory persistence:', asyncError.message);
+                    // Fall back to initializeAuth without persistence
+                    _auth = firebaseAuth.initializeAuth(app);
+                    console.log('Firebase Auth initialized with memory persistence for React Native');
+                }
+            } else {
+                // Web platform - use standard getAuth
+                const { getAuth } = require('firebase/auth');
                 _auth = getAuth(app);
+                console.log('Firebase Auth initialized for web platform');
             }
-        } else {
-            _auth = getAuth(app);
+        } catch (error) {
+            console.error('Firebase Auth initialization failed:', error);
+            throw new Error(`Firebase Auth initialization failed: ${error.message}`);
         }
     }
     return _auth;

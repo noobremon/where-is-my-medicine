@@ -400,6 +400,8 @@ const styles = StyleSheet.create({
         borderRadius: 14, paddingVertical: 16,
         shadowColor: '#0D9488', shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
+        // Web compatibility
+        boxShadow: '0px 4px 8px rgba(13, 148, 136, 0.3)',
     },
     submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });

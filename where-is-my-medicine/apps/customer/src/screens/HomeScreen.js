@@ -342,6 +342,8 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.3,
         shadowRadius: 4,
         elevation: 3,
+        // Web compatibility
+        boxShadow: '0px 2px 4px rgba(13, 148, 136, 0.3)',
     },
     actionRow: {
         flexDirection: 'row',

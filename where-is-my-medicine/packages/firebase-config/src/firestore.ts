@@ -193,17 +193,23 @@ export function subscribePharmacyRequests(pharmacyId, callback) {
 
 /**
  * Subscribe to real-time updates on customer's own requests.
+ * Uses client-side sorting to avoid requiring composite Firestore index.
  */
 export function subscribeCustomerRequests(customerId, callback) {
     const q = query(
         collection(getDbInstance(), COLLECTIONS.MEDICINE_REQUESTS),
-        where('customerId', '==', customerId),
-        orderBy('createdAt', 'desc')
+        where('customerId', '==', customerId)
     );
 
     return onSnapshot(q, (snap) => {
         const requests = snap.docs.map((d) => d.data());
-        callback(requests);
+        // Sort client-side by createdAt (descending)
+        const sortedRequests = requests.sort((a, b) => {
+            const aTime = a.createdAt?.toMillis ? a.createdAt.toMillis() : (a.createdAt instanceof Date ? a.createdAt.getTime() : 0);
+            const bTime = b.createdAt?.toMillis ? b.createdAt.toMillis() : (b.createdAt instanceof Date ? b.createdAt.getTime() : 0);
+            return bTime - aTime; // descending order
+        });
+        callback(sortedRequests);
     });
 }
 
