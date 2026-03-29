@@ -26,4 +26,26 @@ config.resolver.nodeModulesPaths = [
 ];
 config.resolver.disableHierarchicalLookup = true;
 
+// ── Firebase auth RN fix ────────────────────────────────────
+// The `firebase/auth` wrapper package.json has NO `react-native` field,
+// so Metro resolves to the browser bundle which doesn't register the auth
+// component for React Native. Fix: redirect to `@firebase/auth` which has
+// a proper `react-native` field pointing to `dist/rn/index.js`.
+const defaultResolveRequest = config.resolver.resolveRequest;
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+  if (moduleName === 'firebase/auth') {
+    return context.resolveRequest(context, '@firebase/auth', platform);
+  }
+  if (defaultResolveRequest) {
+    return defaultResolveRequest(context, moduleName, platform);
+  }
+  return context.resolveRequest(context, moduleName, platform);
+};
+
+// Configure source extensions including cjs files for Firebase dependencies
+config.resolver.sourceExts = [
+  'js', 'jsx', 'ts', 'tsx', 'json', 'cjs',
+];
+
 module.exports = config;
+

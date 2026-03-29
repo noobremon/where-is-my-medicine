@@ -27,8 +27,32 @@ config.resolver.nodeModulesPaths = [
 ];
 config.resolver.unstable_enableSymlinks = true;
 
+// ── Firebase auth RN fix ────────────────────────────────────
+// The `firebase/auth` wrapper package.json has NO `react-native` field,
+// so Metro resolves to the browser bundle which doesn't register the auth
+// component for React Native, causing:
+//   "Error: Component auth has not been registered yet"
+//
+// Fix: redirect `firebase/auth` imports to `@firebase/auth` which DOES have
+// a proper `react-native` field pointing to `dist/rn/index.js`.
+const isWeb = process.env.EXPO_PLATFORM === 'web';
+if (!isWeb) {
+  const defaultResolveRequest = config.resolver.resolveRequest;
+  config.resolver.resolveRequest = (context, moduleName, platform) => {
+    // Redirect firebase/auth → @firebase/auth (which has react-native entry)
+    if (moduleName === 'firebase/auth') {
+      return context.resolveRequest(context, '@firebase/auth', platform);
+    }
+    // Use default resolver for everything else
+    if (defaultResolveRequest) {
+      return defaultResolveRequest(context, moduleName, platform);
+    }
+    return context.resolveRequest(context, moduleName, platform);
+  };
+}
+
 // Add web platform support (only for web builds)
-if (process.env.EXPO_PLATFORM === 'web') {
+if (isWeb) {
   config.resolver.alias = {
     'react-native': 'react-native-web',
   };

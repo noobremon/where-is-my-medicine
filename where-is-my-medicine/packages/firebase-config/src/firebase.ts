@@ -2,7 +2,7 @@
 // Uses lazy initialization to ensure all Firebase component registrations
 // (e.g. @firebase/auth's registerAuth()) complete before services are accessed.
 import { getApp, getApps, initializeApp } from 'firebase/app';
-import { getAuth, initializeAuth } from 'firebase/auth';
+import { getAuth, initializeAuth } from '@firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
@@ -41,11 +41,11 @@ export function getAuthInstance() {
             try {
                 const AsyncStorage =
                     require('@react-native-async-storage/async-storage').default;
-                // getReactNativePersistence is only exported from the RN-specific
-                // auth bundle, not from the standard 'firebase/auth' web entry.
-                // We require it dynamically to avoid a TS error in this shared package.
+                // At runtime Metro resolves 'firebase/auth' to @firebase/auth's RN
+                // bundle which exports getReactNativePersistence. The static TS types
+                // (from the web entry) don't include it, so we require dynamically.
                 const { getReactNativePersistence } =
-                    require('@firebase/auth/dist/rn/index.js') as { getReactNativePersistence: (storage: any) => any };
+                    require('@firebase/auth') as { getReactNativePersistence: (storage: any) => any };
 
                 _auth = initializeAuth(app, {
                     persistence: getReactNativePersistence(AsyncStorage),
@@ -80,3 +80,4 @@ export function getStorageInstance() {
     }
     return _storage;
 }
+
