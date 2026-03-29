@@ -2,10 +2,9 @@
 // Uses lazy initialization to ensure all Firebase component registrations
 // (e.g. @firebase/auth's registerAuth()) complete before services are accessed.
 import { getApp, getApps, initializeApp } from 'firebase/app';
+import { getAuth, initializeAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
-
-// Note: Firebase Auth imports are done dynamically to avoid registration issues
 
 const firebaseConfig = {
     apiKey: 'AIzaSyB2OCMA0qsmEnUBiTfRzrFhALvs_vxS4Xo',
@@ -35,39 +34,34 @@ export function getAuthInstance() {
         const isReactNative =
             typeof navigator !== 'undefined' && navigator.product === 'ReactNative';
 
-        try {
-            if (isReactNative) {
-                // For React Native, dynamically import Firebase Auth to avoid registration issues
-                const firebaseAuth = require('firebase/auth');
-                
-                // First try to initialize with AsyncStorage if available
-                try {
-                    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
-                    const { getReactNativePersistence } = firebaseAuth;
-                    
-                    if (getReactNativePersistence && AsyncStorage) {
-                        _auth = firebaseAuth.initializeAuth(app, {
-                            persistence: getReactNativePersistence(AsyncStorage),
-                        });
-                        console.log('Firebase Auth initialized with AsyncStorage for React Native');
-                    } else {
-                        throw new Error('AsyncStorage or getReactNativePersistence not available');
-                    }
-                } catch (asyncError) {
-                    console.warn('AsyncStorage setup failed, using memory persistence:', asyncError.message);
-                    // Fall back to initializeAuth without persistence
-                    _auth = firebaseAuth.initializeAuth(app);
-                    console.log('Firebase Auth initialized with memory persistence for React Native');
-                }
-            } else {
-                // Web platform - use standard getAuth
-                const { getAuth } = require('firebase/auth');
+        if (isReactNative) {
+            // React Native: must use initializeAuth (not getAuth) to set persistence.
+            // initializeAuth can only be called ONCE per app; if it was already called
+            // (e.g. hot-reload) it throws — catch that and fall back to getAuth.
+            try {
+                const AsyncStorage =
+                    require('@react-native-async-storage/async-storage').default;
+                // getReactNativePersistence is only exported from the RN-specific
+                // auth bundle, not from the standard 'firebase/auth' web entry.
+                // We require it dynamically to avoid a TS error in this shared package.
+                const { getReactNativePersistence } =
+                    require('@firebase/auth/dist/rn/index.js') as { getReactNativePersistence: (storage: any) => any };
+
+                _auth = initializeAuth(app, {
+                    persistence: getReactNativePersistence(AsyncStorage),
+                });
+                console.log('Firebase Auth initialized with AsyncStorage persistence');
+            } catch (e) {
+                // Two possible reasons:
+                //  1. AsyncStorage require failed
+                //  2. initializeAuth was already called (e.g. Fast Refresh)
+                // In both cases, getAuth returns the existing instance.
+                console.warn('initializeAuth failed, falling back to getAuth:', e.message);
                 _auth = getAuth(app);
-                console.log('Firebase Auth initialized for web platform');
             }
-        } catch (error) {
-            console.error('Firebase Auth initialization failed:', error);
-            throw new Error(`Firebase Auth initialization failed: ${error.message}`);
+        } else {
+            // Web platform — getAuth handles everything automatically
+            _auth = getAuth(app);
         }
     }
     return _auth;
