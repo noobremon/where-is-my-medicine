@@ -4,7 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Alert } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { onAuthChange, getUserProfile, getPharmacy, signOut } from '@wimm/firebase-config';
+import { onAuthChange, subscribeUserProfile, getPharmacy, signOut } from '@wimm/firebase-config';
 import usePharmacyStore from './src/store/usePharmacyStore';
 
 import PharmacyLoginScreen from './src/screens/PharmacyLoginScreen';
@@ -37,32 +37,64 @@ export default function App() {
         usePharmacyStore();
 
     useEffect(() => {
-        const unsub = onAuthChange(async (firebaseUser) => {
-            if (firebaseUser) {
-                try {
-                    const profile = await getUserProfile(firebaseUser.uid);
-                    if (profile && profile.role !== 'pharmacy') {
-                        Alert.alert('Unauthorized', 'This account is not registered as a pharmacy.');
-                        await signOut();
-                        setLoading(false);
-                        return;
-                    }
-                    setUserProfile(profile);
-                    // Load pharmacy-specific data
-                    const pharmacy = await getPharmacy(firebaseUser.uid);
-                    setPharmacyData(pharmacy);
-                    setUser(firebaseUser);
-                } catch (e) {
-                    console.error('getUserProfile error:', e);
+        let unsubAuth;
+        let unsubProfile;
+
+        try {
+            unsubAuth = onAuthChange((firebaseUser) => {
+                if (unsubProfile) {
+                    unsubProfile();
+                    unsubProfile = null;
                 }
-            } else {
-                setUser(null);
-                setUserProfile(null);
-                setPharmacyData(null);
-            }
+
+                if (firebaseUser) {
+                    unsubProfile = subscribeUserProfile(firebaseUser.uid, async (profile) => {
+                        if (profile) {
+                            if (profile.role !== 'pharmacy') {
+                                Alert.alert('Unauthorized', 'This account is not registered as a pharmacy.');
+                                if (unsubProfile) {
+                                    unsubProfile();
+                                    unsubProfile = null;
+                                }
+                                await signOut();
+                                return;
+                            }
+                            setUserProfile(profile);
+                            
+                            // Load pharmacy-specific data
+                            try {
+                                const pharmacy = await getPharmacy(firebaseUser.uid);
+                                setPharmacyData(pharmacy);
+                            } catch (err) {
+                                console.error('getPharmacy error:', err);
+                            }
+                            
+                            setUser(firebaseUser);
+                            setLoading(false);
+                        } else {
+                            // User is signed in but profile is not created yet
+                            setUser(firebaseUser);
+                            setUserProfile(null);
+                            setPharmacyData(null);
+                            setLoading(false);
+                        }
+                    });
+                } else {
+                    setUser(null);
+                    setUserProfile(null);
+                    setPharmacyData(null);
+                    setLoading(false);
+                }
+            });
+        } catch (e) {
+            console.error('onAuthChange error:', e);
             setLoading(false);
-        });
-        return unsub;
+        }
+
+        return () => {
+            if (unsubAuth) unsubAuth();
+            if (unsubProfile) unsubProfile();
+        };
     }, []);
 
     if (isLoading) return null;

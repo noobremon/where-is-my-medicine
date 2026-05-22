@@ -40,6 +40,15 @@ export async function getUserProfile(uid) {
     return snap.exists() ? snap.data() : null;
 }
 
+export function subscribeUserProfile(uid, callback) {
+    return onSnapshot(
+        doc(getDbInstance(), COLLECTIONS.USERS, uid),
+        (snap) => {
+            callback(snap.exists() ? snap.data() : null);
+        }
+    );
+}
+
 export async function updateUserProfile(uid, data) {
     await updateDoc(doc(getDbInstance(), COLLECTIONS.USERS, uid), data);
 }

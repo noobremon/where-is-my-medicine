@@ -5,7 +5,7 @@ import { View, Text, ScrollView, Alert } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import { onAuthChange, getUserProfile, signOut } from '@wimm/firebase-config';
+import { onAuthChange, subscribeUserProfile, signOut } from '@wimm/firebase-config';
 import useStore from './src/store/useStore';
 
 import LoginScreen from './src/screens/LoginScreen';
@@ -73,34 +73,53 @@ function AppContent() {
     const { user, setUser, setUserProfile, setLoading, isLoading } = useStore();
 
     useEffect(() => {
-        let unsub;
+        let unsubAuth;
+        let unsubProfile;
+
         try {
-            unsub = onAuthChange(async (firebaseUser) => {
+            unsubAuth = onAuthChange((firebaseUser) => {
+                if (unsubProfile) {
+                    unsubProfile();
+                    unsubProfile = null;
+                }
+
                 if (firebaseUser) {
-                    try {
-                        const profile = await getUserProfile(firebaseUser.uid);
-                        if (profile && profile.role !== 'customer') {
-                            Alert.alert('Unauthorized', 'This account is not registered as a customer.');
-                            await signOut();
+                    unsubProfile = subscribeUserProfile(firebaseUser.uid, async (profile) => {
+                        if (profile) {
+                            if (profile.role !== 'customer') {
+                                Alert.alert('Unauthorized', 'This account is not registered as a customer.');
+                                if (unsubProfile) {
+                                    unsubProfile();
+                                    unsubProfile = null;
+                                }
+                                await signOut();
+                                return;
+                            }
+                            setUserProfile(profile);
+                            setUser(firebaseUser);
                             setLoading(false);
-                            return;
+                        } else {
+                            // User is signed in but profile is not created yet (registration race condition)
+                            setUser(firebaseUser);
+                            setUserProfile(null);
+                            setLoading(false);
                         }
-                        setUserProfile(profile);
-                        setUser(firebaseUser);
-                    } catch (e) {
-                        console.error('getUserProfile error:', e);
-                    }
+                    });
                 } else {
                     setUser(null);
                     setUserProfile(null);
+                    setLoading(false);
                 }
-                setLoading(false);
             });
         } catch (e) {
             console.error('onAuthChange error:', e);
             setLoading(false);
         }
-        return () => unsub && unsub();
+
+        return () => {
+            if (unsubAuth) unsubAuth();
+            if (unsubProfile) unsubProfile();
+        };
     }, []);
 
     if (isLoading) {
