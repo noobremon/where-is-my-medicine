@@ -27,11 +27,19 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == uid;
     }
 
+    function pharmacyOnlyModifiesOwnResponse() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(['responses']) &&
+             (
+               !('responses' in resource.data) ||
+               request.resource.data.responses.diff(resource.data.responses).affectedKeys().hasOnly([request.auth.uid])
+             );
+    }
+
     // ─── Users Collection ────────────────────────────────
     match /users/{uid} {
       allow read: if isAuthenticated();
-      allow create: if isOwner(uid);
-      allow update: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid) && request.resource.data.role == 'customer';
+      allow update: if (isOwner(uid) && request.resource.data.role == resource.data.role) || isAdmin();
       allow delete: if isAdmin();
     }
 
@@ -59,7 +67,7 @@ service cloud.firestore {
       // Customer can cancel, pharmacy can respond
       allow update: if isAuthenticated() && (
         resource.data.customerId == request.auth.uid ||
-        (isPharmacy() && request.auth.uid in resource.data.notifiedPharmacies)
+        (isPharmacy() && request.auth.uid in resource.data.notifiedPharmacies && pharmacyOnlyModifiesOwnResponse())
       );
       allow delete: if isAdmin();
     }

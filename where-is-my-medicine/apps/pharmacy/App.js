@@ -1,9 +1,10 @@
 // App.js — Root navigation for Pharmacy App
 import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
+import { Alert } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { onAuthChange, getUserProfile, getPharmacy } from '@wimm/firebase-config';
+import { onAuthChange, getUserProfile, getPharmacy, signOut } from '@wimm/firebase-config';
 import usePharmacyStore from './src/store/usePharmacyStore';
 
 import PharmacyLoginScreen from './src/screens/PharmacyLoginScreen';
@@ -37,16 +38,25 @@ export default function App() {
 
     useEffect(() => {
         const unsub = onAuthChange(async (firebaseUser) => {
-            setUser(firebaseUser);
             if (firebaseUser) {
-                const profile = await getUserProfile(firebaseUser.uid);
-                setUserProfile(profile);
-                // Load pharmacy-specific data
-                if (profile?.role === 'pharmacy') {
+                try {
+                    const profile = await getUserProfile(firebaseUser.uid);
+                    if (profile && profile.role !== 'pharmacy') {
+                        Alert.alert('Unauthorized', 'This account is not registered as a pharmacy.');
+                        await signOut();
+                        setLoading(false);
+                        return;
+                    }
+                    setUserProfile(profile);
+                    // Load pharmacy-specific data
                     const pharmacy = await getPharmacy(firebaseUser.uid);
                     setPharmacyData(pharmacy);
+                    setUser(firebaseUser);
+                } catch (e) {
+                    console.error('getUserProfile error:', e);
                 }
             } else {
+                setUser(null);
                 setUserProfile(null);
                 setPharmacyData(null);
             }

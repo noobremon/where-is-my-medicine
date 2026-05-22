@@ -242,3 +242,83 @@ exports.setAdminRole = onCall(async (request) => {
 
     return { success: true };
 });
+
+// ═════════════════════════════════════════════════════════
+// 4. CALLABLE: Onboard new pharmacy (creates user, sets role, creates docs)
+// ═════════════════════════════════════════════════════════
+exports.onboardPharmacy = onCall(async (request) => {
+    // Only existing admins can onboard new pharmacies
+    const callerUid = request.auth?.uid;
+    if (!callerUid) {
+        throw new HttpsError('unauthenticated', 'Must be signed in.');
+    }
+
+    const callerSnap = await db.doc(`users/${callerUid}`).get();
+    if (!callerSnap.exists || callerSnap.data().role !== 'admin') {
+        throw new HttpsError('permission-denied', 'Only admins can onboard pharmacies.');
+    }
+
+    const { email, password, name, ownerName, phone, address, location } = request.data;
+    if (!email || !password || !name || !ownerName || !phone || !address || !location) {
+        throw new HttpsError('invalid-argument', 'Missing required fields.');
+    }
+
+    // Create auth user
+    let userRecord;
+    try {
+        userRecord = await getAuth().createUser({
+            email,
+            password,
+            displayName: name,
+            phoneNumber: phone.startsWith('+') ? phone : undefined,
+        });
+    } catch (authError) {
+        console.error('Error creating auth user:', authError);
+        throw new HttpsError('already-exists', authError.message || 'Auth user creation failed.');
+    }
+
+    const uid = userRecord.uid;
+
+    try {
+        // Set custom claim for pharmacy role
+        await getAuth().setCustomUserClaims(uid, { role: 'pharmacy' });
+
+        // Create user profile document in Firestore
+        await db.doc(`users/${uid}`).set({
+            uid,
+            displayName: name,
+            email,
+            phone,
+            role: 'pharmacy',
+            fcmToken: '',
+            createdAt: FieldValue.serverTimestamp(),
+        });
+
+        // Create pharmacy document in Firestore
+        await db.doc(`pharmacies/${uid}`).set({
+            id: uid,
+            name,
+            ownerName,
+            email,
+            phone,
+            address,
+            location,
+            isActive: true,
+            subscription: { plan: 'basic', isActive: true, expiresAt: null },
+            fcmToken: '',
+            medicines: [],
+            createdAt: FieldValue.serverTimestamp(),
+        });
+
+        return { success: true, uid };
+    } catch (error) {
+        console.error('Error during onboarding db setup, rolling back auth user:', error);
+        try {
+            await getAuth().deleteUser(uid);
+        } catch (delError) {
+            console.error('Rollback deleteUser failed:', delError);
+        }
+        throw new HttpsError('internal', error.message || 'Onboarding database setup failed.');
+    }
+});
+

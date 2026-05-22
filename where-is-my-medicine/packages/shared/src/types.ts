@@ -68,6 +68,7 @@ export type ResponseStatus = 'accepted' | 'rejected';
 
 export interface PharmacyResponse {
   status: ResponseStatus;
+  pharmacyName: string;
   pharmacyHighlights: Highlight[];
   distanceKm: number;
   respondedAt: any; // Firestore Timestamp

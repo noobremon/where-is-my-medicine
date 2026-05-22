@@ -2,15 +2,52 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
+    // Helper to fetch medicine request from firestore
+    function getRequestData(fileName) {
+      // fileName is "{requestId}.jpg"
+      // extract the requestId (fileName without the last 4 characters)
+      return firestore.get(/databases/(default)/documents/medicineRequests/$(fileName.subString(0, fileName.size() - 4))).data;
+    }
+
+    function getUserData() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return request.auth != null && getUserData().role == 'admin';
+    }
+
+    function isRequestOwner(fileName) {
+      return request.auth != null && getRequestData(fileName).customerId == request.auth.uid;
+    }
+
+    function isNotifiedPharmacy(fileName) {
+      return request.auth != null && (request.auth.uid in getRequestData(fileName).notifiedPharmacies);
+    }
+
     // Prescription images: /prescriptions/{requestId}.jpg
     match /prescriptions/{fileName} {
-      // Any authenticated user can read prescription images
-      allow read: if request.auth != null;
-      // Only authenticated users can upload (max 5 MB, images only)
-      allow write: if request.auth != null
-                   && request.resource.size < 5 * 1024 * 1024
-                   && request.resource.contentType.matches('image/.*');
-      allow delete: if request.auth != null;
+      // Allow read if: customer who created it, notified pharmacy, or admin
+      allow read: if request.auth != null && (
+        fileName.size() > 4 && fileName.endsWith('.jpg') && (
+          isRequestOwner(fileName) ||
+          isNotifiedPharmacy(fileName)
+        ) || isAdmin()
+      );
+      
+      // Allow write if: owner of the request, or admin
+      allow write: if request.auth != null && (
+        fileName.size() > 4 && fileName.endsWith('.jpg') &&
+        request.resource.size < 5 * 1024 * 1024 &&
+        request.resource.contentType.matches('image/.*') &&
+        isRequestOwner(fileName)
+      ) || isAdmin();
+
+      // Allow delete if: owner of the request, or admin
+      allow delete: if request.auth != null && (
+        fileName.size() > 4 && fileName.endsWith('.jpg') &&
+        isRequestOwner(fileName)
+      ) || isAdmin();
     }
   }
 }

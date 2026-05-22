@@ -90,7 +90,7 @@ export default function RequestDetailScreen({ route, navigation }) {
                     color={response.status === 'accepted' ? '#059669' : '#EF4444'}
                 />
                 <View style={styles.responseInfo}>
-                    <Text style={styles.responsePharmacy}>Pharmacy</Text>
+                    <Text style={styles.responsePharmacy}>{response.pharmacyName || 'Pharmacy'}</Text>
                     <Text style={styles.responseStatus}>
                         {response.status === 'accepted' ? 'Medicine Available' : 'Not Available'}
                     </Text>

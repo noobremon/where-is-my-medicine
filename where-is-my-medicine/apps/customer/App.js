@@ -1,11 +1,11 @@
 // App.js — Root navigation for Customer App
 import React, { useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { View, Text, ScrollView } from 'react-native';
+import { View, Text, ScrollView, Alert } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import { onAuthChange, getUserProfile } from '@wimm/firebase-config';
+import { onAuthChange, getUserProfile, signOut } from '@wimm/firebase-config';
 import useStore from './src/store/useStore';
 
 import LoginScreen from './src/screens/LoginScreen';
@@ -76,15 +76,22 @@ function AppContent() {
         let unsub;
         try {
             unsub = onAuthChange(async (firebaseUser) => {
-                setUser(firebaseUser);
                 if (firebaseUser) {
                     try {
                         const profile = await getUserProfile(firebaseUser.uid);
+                        if (profile && profile.role !== 'customer') {
+                            Alert.alert('Unauthorized', 'This account is not registered as a customer.');
+                            await signOut();
+                            setLoading(false);
+                            return;
+                        }
                         setUserProfile(profile);
+                        setUser(firebaseUser);
                     } catch (e) {
                         console.error('getUserProfile error:', e);
                     }
                 } else {
+                    setUser(null);
                     setUserProfile(null);
                 }
                 setLoading(false);

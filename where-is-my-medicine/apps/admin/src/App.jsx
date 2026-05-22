@@ -1,5 +1,5 @@
 // WIMM Admin Panel — Full application with login, dashboard, pharmacy management
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 import {
     signInWithEmailAndPassword,
@@ -20,7 +20,8 @@ import {
     where,
     orderBy,
 } from 'firebase/firestore';
-import { auth, db } from './firebase';
+import { httpsCallable } from 'firebase/functions';
+import { auth, db, functions } from './firebase';
 import { geohashForLocation } from 'geofire-common';
 
 // ═══════════════════════════════════════════════════════
@@ -257,46 +258,16 @@ function PharmaciesPage({ pharmacies, onRefresh }) {
                 });
                 showToast('Pharmacy updated successfully!');
             } else {
-                // Creating new pharmacy — first create auth user, then Firestore docs
-                // Note: in real production this would use a Cloud Function
-                // For MVP, we create the user account via admin SDK (Cloud Function)
-                // Here we just create the Firestore documents directly
-
-                const { createUserWithEmailAndPassword } = await import('firebase/auth');
-                const { getAuth } = await import('firebase/auth');
-
-                // Create a secondary auth instance to avoid signing out admin
-                const { initializeApp } = await import('firebase/app');
-                const secondaryApp = initializeApp(auth.app.options, 'secondary');
-                const secondaryAuth = getAuth(secondaryApp);
-
-                const cred = await createUserWithEmailAndPassword(secondaryAuth, form.email, form.password);
-                const uid = cred.user.uid;
-
-                // Sign out from secondary immediately
-                const { signOut: signOutSecondary } = await import('firebase/auth');
-                await signOutSecondary(secondaryAuth);
-
-                // Clean up the secondary app to avoid crash on next onboard
-                const { deleteApp } = await import('firebase/app');
-                await deleteApp(secondaryApp);
-
-                // Create user profile
-                await setDoc(doc(db, 'users', uid), {
-                    uid, displayName: form.name, email: form.email,
-                    phone: form.phone, role: 'pharmacy',
-                    fcmToken: '', createdAt: serverTimestamp(),
-                });
-
-                // Create pharmacy document
-                await setDoc(doc(db, 'pharmacies', uid), {
-                    id: uid, name: form.name, ownerName: form.ownerName,
-                    email: form.email, phone: form.phone, address: form.address,
+                // Creating new pharmacy securely using Cloud Function
+                const onboardPharmacyFn = httpsCallable(functions, 'onboardPharmacy');
+                await onboardPharmacyFn({
+                    email: form.email,
+                    password: form.password,
+                    name: form.name,
+                    ownerName: form.ownerName,
+                    phone: form.phone,
+                    address: form.address,
                     location: { lat, lng, geohash },
-                    isActive: true,
-                    subscription: { plan: 'basic', isActive: true, expiresAt: null },
-                    fcmToken: '', medicines: [],
-                    createdAt: serverTimestamp(),
                 });
 
                 showToast('Pharmacy onboarded successfully!');
@@ -603,19 +574,19 @@ export default function App() {
     const [pharmacies, setPharmacies] = useState([]);
     const [requests, setRequests] = useState([]);
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         const pSnap = await getDocs(collection(db, 'pharmacies'));
         setPharmacies(pSnap.docs.map((d) => ({ ...d.data(), id: d.id })));
 
         const rSnap = await getDocs(query(collection(db, 'medicineRequests'), orderBy('createdAt', 'desc')));
         setRequests(rSnap.docs.map((d) => ({ ...d.data(), id: d.id })));
-    };
+    }, []);
 
     useEffect(() => {
         if (user && profile?.role === 'admin') {
             loadData();
         }
-    }, [user, profile]);
+    }, [user, profile, loadData]);
 
     if (loading) {
         return (

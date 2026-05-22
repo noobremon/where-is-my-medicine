@@ -119,6 +119,7 @@ export default function RespondRequestScreen({ route, navigation }) {
 
             await addPharmacyResponse(requestId, user.uid, {
                 status,
+                pharmacyName: pharmacyData?.name || 'Pharmacy',
                 pharmacyHighlights: status === 'accepted' ? pharmacyHighlights : [],
                 distanceKm: distKm,
                 respondedAt: serverTimestamp(),
