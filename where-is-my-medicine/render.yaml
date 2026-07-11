@@ -3,8 +3,8 @@ services:
   - type: web
     name: wimm-admin
     runtime: static
-    buildCommand: npm install && npm run build:admin
-    staticPublishPath: apps/admin/dist
+    buildCommand: cd where-is-my-medicine && npm install && npm run build:admin
+    staticPublishPath: where-is-my-medicine/apps/admin/dist
     pullRequestPreviewsEnabled: false
     routes:
       - type: rewrite
@@ -18,8 +18,8 @@ services:
   - type: web
     name: wimm-customer
     runtime: static
-    buildCommand: npm install && npm run build:customer
-    staticPublishPath: apps/customer/dist
+    buildCommand: cd where-is-my-medicine && npm install && npm run build:customer
+    staticPublishPath: where-is-my-medicine/apps/customer/dist
     pullRequestPreviewsEnabled: false
     routes:
       - type: rewrite
@@ -33,8 +33,8 @@ services:
   - type: web
     name: wimm-pharmacy
     runtime: static
-    buildCommand: npm install && npm run build:pharmacy
-    staticPublishPath: apps/pharmacy/dist
+    buildCommand: cd where-is-my-medicine && npm install && npm run build:pharmacy
+    staticPublishPath: where-is-my-medicine/apps/pharmacy/dist
     pullRequestPreviewsEnabled: false
     routes:
       - type: rewrite
