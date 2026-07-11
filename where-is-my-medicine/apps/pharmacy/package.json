@@ -6,7 +6,8 @@
     "scripts": {
         "start": "npx expo start",
         "android": "npx expo start --android",
-        "ios": "npx expo start --ios"
+        "ios": "npx expo start --ios",
+        "build:web": "npx expo export --platform web"
     },
     "dependencies": {
         "@babel/plugin-transform-template-literals": "^7.27.1",

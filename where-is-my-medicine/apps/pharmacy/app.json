@@ -31,6 +31,10 @@
         "plugins": [
             "expo-location"
         ],
-        "scheme": "wimm-pharmacy"
+        "scheme": "wimm-pharmacy",
+        "web": {
+            "bundler": "metro",
+            "output": "single"
+        }
     }
 }

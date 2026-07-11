@@ -1,0 +1,45 @@
+services:
+  # Admin Panel (Vite + React)
+  - type: web
+    name: wimm-admin
+    runtime: static
+    buildCommand: npm install && npm run build:admin
+    staticPublishPath: apps/admin/dist
+    pullRequestPreviewsEnabled: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: 18
+
+  # Customer App (Expo Web)
+  - type: web
+    name: wimm-customer
+    runtime: static
+    buildCommand: npm install && npm run build:customer
+    staticPublishPath: apps/customer/dist
+    pullRequestPreviewsEnabled: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: 18
+
+  # Pharmacy App (Expo Web)
+  - type: web
+    name: wimm-pharmacy
+    runtime: static
+    buildCommand: npm install && npm run build:pharmacy
+    staticPublishPath: apps/pharmacy/dist
+    pullRequestPreviewsEnabled: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: 18

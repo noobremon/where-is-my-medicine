@@ -35,6 +35,10 @@
             "expo-image-picker",
             "expo-camera"
         ],
-        "scheme": "wimm-customer"
+        "scheme": "wimm-customer",
+        "web": {
+            "bundler": "metro",
+            "output": "single"
+        }
     }
 }

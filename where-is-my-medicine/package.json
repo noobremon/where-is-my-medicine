@@ -12,6 +12,9 @@
     "customer": "npm run start --workspace=apps/customer",
     "pharmacy": "npm run start --workspace=apps/pharmacy",
     "functions": "npm run serve --workspace=firebase/functions",
+    "build:admin": "npm run build --workspace=apps/admin",
+    "build:customer": "npm run build:web --workspace=apps/customer",
+    "build:pharmacy": "npm run build:web --workspace=apps/pharmacy",
     "postinstall": "patch-package"
   },
   "engines": {
