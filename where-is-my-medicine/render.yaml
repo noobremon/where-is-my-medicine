@@ -12,7 +12,7 @@ services:
         destination: /index.html
     envVars:
       - key: NODE_VERSION
-        value: 18
+        value: 20
 
   # Customer App (Expo Web)
   - type: web
@@ -27,7 +27,7 @@ services:
         destination: /index.html
     envVars:
       - key: NODE_VERSION
-        value: 18
+        value: 20
 
   # Pharmacy App (Expo Web)
   - type: web
@@ -42,4 +42,4 @@ services:
         destination: /index.html
     envVars:
       - key: NODE_VERSION
-        value: 18
+        value: 20
